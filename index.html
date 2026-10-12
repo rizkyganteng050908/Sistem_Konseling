@@ -1,0 +1,737 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIPKOS - Sistem Konseling Siswa</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+header {
+    background: #12305a;
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+header h2 {
+    margin: 0;
+}
+
+button {
+    border: none;
+    border-radius: 7px;
+    padding: 10px 14px;
+    cursor: pointer;
+    background: #2563eb;
+    color: white;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 11px;
+    margin: 7px 0 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #12305a, #2563eb);
+}
+
+.login-box {
+    width: 100%;
+    max-width: 400px;
+    padding: 28px;
+    border-radius: 15px;
+    background: white;
+}
+
+.login-box h1 {
+    text-align: center;
+    color: #12305a;
+}
+
+.container {
+    display: flex;
+    min-height: calc(100vh - 76px);
+}
+
+nav {
+    width: 230px;
+    background: white;
+    padding: 15px;
+}
+
+nav button {
+    display: block;
+    width: 100%;
+    margin-bottom: 9px;
+    text-align: left;
+    background: #e8eef9;
+    color: #12305a;
+}
+
+main {
+    flex: 1;
+    min-width: 0;
+    padding: 25px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 8px #00000008;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.stat {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.stat h2 {
+    color: #2563eb;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    min-width: 550px;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+}
+
+th {
+    background: #e8eef9;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.notice {
+    padding: 12px;
+    background: #fff7ed;
+    color: #9a3412;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    line-height: 1.5;
+}
+
+@media (max-width: 750px) {
+    .container {
+        display: block;
+    }
+
+    nav {
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+        gap: 7px;
+    }
+
+    nav button {
+        min-width: max-content;
+    }
+
+    main {
+        padding: 14px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- HALAMAN LOGIN -->
+<section id="loginPage" class="login-page">
+    <form class="login-box" onsubmit="login(event)">
+        <h1>SIPKOS</h1>
+        <p style="text-align:center">
+            Sistem Pelanggaran dan Konseling Siswa
+        </p>
+
+        <label>Username</label>
+        <input id="username" required placeholder="Masukkan username">
+
+        <label>Password</label>
+        <input id="password" type="password" required
+               placeholder="Masukkan password">
+
+        <label>Login sebagai</label>
+        <select id="role">
+            <option value="bk">Guru BK</option>
+            <option value="guru">Guru / Wali Kelas</option>
+            <option value="kesiswaan">Kesiswaan</option>
+            <option value="siswa">Siswa</option>
+        </select>
+
+        <button type="submit" style="width:100%">
+            Login
+        </button>
+
+        <p id="error" style="color:red"></p>
+
+        <small>
+            Akun demo:<br>
+            Guru BK: bk / bk123<br>
+            Guru: guru / guru123<br>
+            Kesiswaan: kesiswaan / kes123<br>
+            Siswa: siswa / siswa123
+        </small>
+    </form>
+</section>
+
+<!-- APLIKASI -->
+<div id="application" class="hidden">
+
+<header>
+    <div>
+        <h2>SIPKOS</h2>
+        <small>Sistem Informasi Pelanggaran dan Konseling</small>
+    </div>
+
+    <div>
+        <span id="userInfo"></span>
+        <button onclick="logout()">Logout</button>
+    </div>
+</header>
+
+<div class="container">
+
+<nav id="menu"></nav>
+
+<main>
+    <div class="notice">
+        Mode tanpa database: data hanya tersimpan di browser
+        perangkat ini. Data tidak otomatis tersinkron ke perangkat lain.
+        Jangan gunakan data konseling asli pada versi demo ini.
+    </div>
+
+    <div id="content"></div>
+</main>
+
+</div>
+</div>
+
+<script>
+// AKUN DEMO
+const accounts = [
+    { username: "bk", password: "bk123",
+      name: "Guru BK", role: "bk" },
+    { username: "guru", password: "guru123",
+      name: "Guru", role: "guru" },
+    { username: "kesiswaan", password: "kes123",
+      name: "Kesiswaan", role: "kesiswaan" },
+    { username: "siswa", password: "siswa123",
+      name: "Siswa Demo", role: "siswa" }
+];
+
+let currentUser = null;
+
+// DATA LOKAL BROWSER
+function loadData(key, initial) {
+    try {
+        const saved = localStorage.getItem("sipkos_" + key);
+        return saved === null ? initial : JSON.parse(saved);
+    } catch {
+        return initial;
+    }
+}
+
+let students = loadData("students", [
+    { id: 1, nis: "1001", name: "Siswa Demo", kelas: "X RPL 1" }
+]);
+
+let violations = loadData("violations", [
+    { id: 1, name: "Terlambat", points: 5 },
+    { id: 2, name: "Tidak mengerjakan tugas", points: 3 },
+    { id: 3, name: "Tidak memakai atribut", points: 5 },
+    { id: 4, name: "Membolos", points: 15 }
+]);
+
+let records = loadData("records", []);
+let counseling = loadData("counseling", []);
+let schedules = loadData("schedules", []);
+let requests = loadData("requests", []);
+
+function saveData() {
+    localStorage.setItem("sipkos_students", JSON.stringify(students));
+    localStorage.setItem("sipkos_violations", JSON.stringify(violations));
+    localStorage.setItem("sipkos_records", JSON.stringify(records));
+    localStorage.setItem("sipkos_counseling", JSON.stringify(counseling));
+    localStorage.setItem("sipkos_schedules", JSON.stringify(schedules));
+    localStorage.setItem("sipkos_requests", JSON.stringify(requests));
+}
+
+function nextId(array) {
+    return Math.max(0, ...array.map(item => item.id)) + 1;
+}
+
+function safe(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;",
+        '"': "&quot;", "'": "&#39;"
+    })[char]);
+}
+
+// LOGIN
+function login(event) {
+    event.preventDefault();
+
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const role = document.getElementById("role").value;
+
+    const account = accounts.find(user =>
+        user.username === username &&
+        user.password === password &&
+        user.role === role
+    );
+
+    if (!account) {
+        document.getElementById("error").textContent =
+            "Username, password, atau peran salah.";
+        return;
+    }
+
+    currentUser = account;
+
+    document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("application").classList.remove("hidden");
+    document.getElementById("userInfo").textContent =
+        account.name + " (" + account.role + ")";
+
+    renderMenu();
+    dashboard();
+}
+
+function logout() {
+    currentUser = null;
+    document.getElementById("application").classList.add("hidden");
+    document.getElementById("loginPage").classList.remove("hidden");
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("error").textContent = "";
+}
+
+// MENU BERDASARKAN PERAN
+function renderMenu() {
+    let items = [
+        ["Dashboard", "dashboard"]
+    ];
+
+    if (currentUser.role === "bk") {
+        items.push(
+            ["Data Siswa", "students"],
+            ["Master Pelanggaran", "violations"],
+            ["Catatan Pelanggaran", "records"],
+            ["Hasil Konseling", "counseling"],
+            ["Jadwal Konseling", "schedules"],
+            ["Permohonan Konseling", "requests"],
+            ["Laporan", "reports"]
+        );
+    } else if (
+        currentUser.role === "guru" ||
+        currentUser.role === "kesiswaan"
+    ) {
+        items.push(
+            ["Riwayat & Poin", "records"],
+            ["Jadwal Konseling", "schedules"],
+            ["Laporan", "reports"]
+        );
+    } else {
+        items.push(
+            ["Riwayat & Poin Saya", "myrecords"],
+            ["Ajukan Konseling", "requests"],
+            ["Jadwal Konseling", "schedules"]
+        );
+    }
+
+    document.getElementById("menu").innerHTML = items.map(item =>
+        `<button onclick="${item[1]}()">${item[0]}</button>`
+    ).join("");
+}
+
+function heading(title, description = "") {
+    return `<h2>${title}</h2><p>${description}</p>`;
+}
+
+function studentOptions() {
+    return students.map(s =>
+        `<option value="${s.id}">${safe(s.name)} - ${safe(s.kelas)}</option>`
+    ).join("");
+}
+
+function violationOptions() {
+    return violations.map(v =>
+        `<option value="${v.id}">${safe(v.name)} (${v.points} poin)</option>`
+    ).join("");
+}
+
+function studentName(id) {
+    return students.find(s => s.id == id)?.name || "Siswa";
+}
+
+function totalPoints(id) {
+    return records.reduce((total, record) => {
+        if (record.studentId != id) return total;
+        const violation = violations.find(v => v.id == record.violationId);
+        return total + (violation ? Number(violation.points) : 0);
+    }, 0);
+}
+
+function table(headers, rows) {
+    return `<div class="table-wrap"><table>
+        <thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>${rows || `<tr><td colspan="${headers.length}">Belum ada data.</td></tr>`}</tbody>
+    </table></div>`;
+}
+
+// DASHBOARD
+function dashboard() {
+    document.getElementById("content").innerHTML =
+        heading("Dashboard", "Selamat datang di SIPKOS.") +
+        `<div class="cards">
+            <div class="stat"><h3>Total Siswa</h3><h2>${students.length}</h2></div>
+            <div class="stat"><h3>Catatan Pelanggaran</h3><h2>${records.length}</h2></div>
+            <div class="stat"><h3>Jadwal Konseling</h3><h2>${schedules.length}</h2></div>
+        </div>
+        <div class="card">
+            <h3>Informasi</h3>
+            <p>Gunakan menu untuk mengelola data sesuai hak akses akun.</p>
+            <p>Data disimpan secara lokal pada browser ini.</p>
+        </div>`;
+}
+
+// DATA SISWA
+function studentsPage() {
+    if (currentUser.role !== "bk") return dashboard();
+
+    document.getElementById("content").innerHTML =
+        heading("Data Siswa", "Kelola data siswa.") +
+        `<div class="card">
+            <h3>Tambah Siswa</h3>
+            <form onsubmit="addStudent(event)">
+                <label>NIS</label><input id="nis" required>
+                <label>Nama Siswa</label><input id="studentName" required>
+                <label>Kelas</label><input id="kelas" required>
+                <button>Simpan Siswa</button>
+            </form>
+        </div>
+        <div class="card">
+            ${table(["NIS", "Nama", "Kelas", "Total Poin"], students.map(s =>
+                `<tr><td>${safe(s.nis)}</td><td>${safe(s.name)}</td>
+                <td>${safe(s.kelas)}</td><td>${totalPoints(s.id)}</td></tr>`
+            ).join(""))}
+        </div>`;
+}
+
+function addStudent(event) {
+    event.preventDefault();
+
+    students.push({
+        id: nextId(students),
+        nis: document.getElementById("nis").value,
+        name: document.getElementById("studentName").value,
+        kelas: document.getElementById("kelas").value
+    });
+
+    saveData();
+    studentsPage();
+}
+
+// MASTER PELANGGARAN
+function violationsPage() {
+    if (currentUser.role !== "bk") return dashboard();
+
+    document.getElementById("content").innerHTML =
+        heading("Master Pelanggaran", "Atur jenis pelanggaran dan poin.") +
+        `<div class="card">
+            <form onsubmit="addViolation(event)">
+                <label>Nama Pelanggaran</label>
+                <input id="violationName" required>
+                <label>Jumlah Poin</label>
+                <input id="violationPoints" type="number" min="1" required>
+                <button>Simpan Pelanggaran</button>
+            </form>
+        </div>
+        <div class="card">
+            ${table(["Nama Pelanggaran", "Poin"], violations.map(v =>
+                `<tr><td>${safe(v.name)}</td><td>${v.points}</td></tr>`
+            ).join(""))}
+        </div>`;
+}
+
+function addViolation(event) {
+    event.preventDefault();
+
+    violations.push({
+        id: nextId(violations),
+        name: document.getElementById("violationName").value,
+        points: Number(document.getElementById("violationPoints").value)
+    });
+
+    saveData();
+    violationsPage();
+}
+
+// CATAT PELANGGARAN
+function recordsPage() {
+    const isStudent = currentUser.role === "siswa";
+    const ownStudent = students.find(s => s.nis === "1001");
+    const ownRecords = isStudent
+        ? records.filter(r => ownStudent && r.studentId == ownStudent.id)
+        : records;
+
+    let form = "";
+
+    if (["bk", "guru", "kesiswaan"].includes(currentUser.role)) {
+        form = `<div class="card">
+            <h3>Catat Pelanggaran</h3>
+            <form onsubmit="addRecord(event)">
+                <label>Siswa</label>
+                <select id="recordStudent">${studentOptions()}</select>
+                <label>Jenis Pelanggaran</label>
+                <select id="recordViolation">${violationOptions()}</select>
+                <label>Tanggal</label>
+                <input id="recordDate" type="date" required>
+                <label>Keterangan</label>
+                <textarea id="recordNote"></textarea>
+                <button>Simpan Catatan</button>
+            </form>
+        </div>`;
+    }
+
+    document.getElementById("content").innerHTML =
+        heading("Catatan Pelanggaran", "Riwayat pelanggaran siswa.") +
+        form +
+        `<div class="card">
+            ${isStudent && ownStudent
+                ? `<h3>Total poin saya: ${totalPoints(ownStudent.id)}</h3>` : ""}
+            ${table(["Tanggal", "Siswa", "Pelanggaran", "Poin", "Keterangan"],
+                ownRecords.map(r => {
+                    const v = violations.find(x => x.id == r.violationId);
+                    return `<tr><td>${safe(r.date)}</td>
+                        <td>${safe(studentName(r.studentId))}</td>
+                        <td>${safe(v?.name || "-")}</td>
+                        <td>${v?.points || 0}</td>
+                        <td>${safe(r.note)}</td></tr>`;
+                }).join(""))}
+        </div>`;
+}
+
+function addRecord(event) {
+    event.preventDefault();
+
+    records.push({
+        id: nextId(records),
+        studentId: Number(document.getElementById("recordStudent").value),
+        violationId: Number(document.getElementById("recordViolation").value),
+        date: document.getElementById("recordDate").value,
+        note: document.getElementById("recordNote").value
+    });
+
+    saveData();
+    recordsPage();
+}
+
+// HASIL KONSELING
+function counselingPage() {
+    if (currentUser.role !== "bk") return dashboard();
+
+    document.getElementById("content").innerHTML =
+        heading("Hasil Konseling", "Catat hasil bimbingan siswa.") +
+        `<div class="card">
+            <form onsubmit="addCounseling(event)">
+                <label>Siswa</label>
+                <select id="counselStudent">${studentOptions()}</select>
+                <label>Tanggal</label><input id="counselDate" type="date" required>
+                <label>Hasil Konseling</label>
+                <textarea id="counselResult" required></textarea>
+                <label>Status</label>
+                <select id="counselStatus">
+                    <option>Selesai</option>
+                    <option>Tindak Lanjut</option>
+                </select>
+                <button>Simpan Hasil</button>
+            </form>
+        </div>
+        <div class="card">
+            ${table(["Tanggal", "Siswa", "Hasil", "Status"], counseling.map(c =>
+                `<tr><td>${safe(c.date)}</td><td>${safe(studentName(c.studentId))}</td>
+                <td>${safe(c.result)}</td><td>${safe(c.status)}</td></tr>`
+            ).join(""))}
+        </div>`;
+}
+
+function addCounseling(event) {
+    event.preventDefault();
+
+    counseling.push({
+        id: nextId(counseling),
+        studentId: Number(document.getElementById("counselStudent").value),
+        date: document.getElementById("counselDate").value,
+        result: document.getElementById("counselResult").value,
+        status: document.getElementById("counselStatus").value
+    });
+
+    saveData();
+    counselingPage();
+}
+
+// JADWAL KONSELING
+function schedulesPage() {
+    const isBK = currentUser.role === "bk";
+    const ownStudent = students.find(s => s.nis === "1001");
+    const list = currentUser.role === "siswa"
+        ? schedules.filter(s => ownStudent && s.studentId == ownStudent.id)
+        : schedules;
+
+    document.getElementById("content").innerHTML =
+        heading("Jadwal Konseling", "Jadwal bimbingan konseling.") +
+        (isBK ? `<div class="card">
+            <form onsubmit="addSchedule(event)">
+                <label>Siswa</label><select id="scheduleStudent">${studentOptions()}</select>
+                <label>Tanggal</label><input id="scheduleDate" type="date" required>
+                <label>Jam</label><input id="scheduleTime" type="time" required>
+                <label>Tempat</label><input id="schedulePlace" required>
+                <button>Simpan Jadwal</button>
+            </form>
+        </div>` : "") +
+        `<div class="card">
+            ${table(["Tanggal", "Jam", "Siswa", "Tempat"], list.map(s =>
+                `<tr><td>${safe(s.date)}</td><td>${safe(s.time)}</td>
+                <td>${safe(studentName(s.studentId))}</td>
+                <td>${safe(s.place)}</td></tr>`
+            ).join(""))}
+        </div>`;
+}
+
+function addSchedule(event) {
+    event.preventDefault();
+
+    schedules.push({
+        id: nextId(schedules),
+        studentId: Number(document.getElementById("scheduleStudent").value),
+        date: document.getElementById("scheduleDate").value,
+        time: document.getElementById("scheduleTime").value,
+        place: document.getElementById("schedulePlace").value
+    });
+
+    saveData();
+    schedulesPage();
+}
+
+// PENGAJUAN KONSELING
+function requestsPage() {
+    const isStudent = currentUser.role === "siswa";
+    const ownStudent = students.find(s => s.nis === "1001");
+    const list = isStudent
+        ? requests.filter(r => ownStudent && r.studentId == ownStudent.id)
+        : requests;
+
+    document.getElementById("content").innerHTML =
+        heading("Permohonan Konseling", "Pengajuan dan status permohonan.") +
+        (isStudent ? `<div class="card">
+            <form onsubmit="addRequest(event)">
+                <label>Alasan Pengajuan</label>
+                <textarea id="requestReason" required></textarea>
+                <button>Kirim Permohonan</button>
+            </form>
+        </div>` : "") +
+        `<div class="card">
+            ${table(["Siswa", "Alasan", "Status"], list.map(r =>
+                `<tr><td>${safe(studentName(r.studentId))}</td>
+                <td>${safe(r.reason)}</td><td>${safe(r.status)}</td></tr>`
+            ).join(""))}
+        </div>`;
+}
+
+function addRequest(event) {
+    event.preventDefault();
+
+    const ownStudent = students.find(s => s.nis === "1001");
+    if (!ownStudent) return;
+
+    requests.push({
+        id: nextId(requests),
+        studentId: ownStudent.id,
+        reason: document.getElementById("requestReason").value,
+        status: "Menunggu"
+    });
+
+    saveData();
+    requestsPage();
+}
+
+// LAPORAN
+function reportsPage() {
+    if (currentUser.role === "siswa") return dashboard();
+
+    document.getElementById("content").innerHTML =
+        heading("Laporan", "Rekap pelanggaran siswa.") +
+        `<div class="card">
+            <button onclick="window.print()">Cetak Laporan</button>
+        </div>
+        <div class="card">
+            ${table(["NIS", "Nama", "Kelas", "Jumlah Catatan", "Total Poin"],
+                students.map(s => `<tr>
+                    <td>${safe(s.nis)}</td>
+                    <td>${safe(s.name)}</td>
+                    <td>${safe(s.kelas)}</td>
+                    <td>${records.filter(r => r.studentId == s.id).length}</td>
+                    <td>${totalPoints(s.id)}</td>
+                </tr>`).join(""))}
+        </div>`;
+}
+</script>
+
+</body>
+</html>
